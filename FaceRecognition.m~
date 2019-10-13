@@ -8,24 +8,34 @@ database = imageSet('Data/gt_db', 'recursive');
 %%% testing data contains 3 images per subject
 [trainingData, testingData] = partition(database, [0.8 0.2]); 
 
-%% Feature Extraction
 
-%%% HOG - this seems to take a while, other techniques to try KNN OR CNN
-counter = 1;
-for i=1:size(trainingData, 2) % 1 to 50
-    for j=1:trainingData(i).Count % 1 to 12
-        %imshow(read(trainingData(i),j));
-        features(counter,:) = extractHOGFeatures(read(trainingData(i),j));
-        labels{counter} = trainingData(i).Description;
-        counter = counter + 1;
-    end
-    personIndex{i} = trainingData(i).Description;
-end
+%% Face detection
+detector = vision.CascadeObjectDetector;
+detector.MinSize = [135 135];
+
+
+%% Feature extraction
+
+featureExtractionMethod = 'LBP';
+[features, labels, personIndex] = FeatureExtraction(trainingData, detector, featureExtractionMethod);
 
 
 %% Training Model
-model = fitcecoc(features, labels);
+fprintf('Training\n');
+model = fitcecoc(features, labels); % SVM
+%%model = fitcknn(features, labels); % KNN
 
-%% Predict Model
-% predictedValue = predict(model, queryFeature);
 
+%% Testing Model
+fprintf('Testing\n');
+person = 1;
+queryImage = read(testingData(person), 1);
+
+[queryFeatures, label, index] = FeatureExtraction(testingData, detector, featureExtractionMethod);
+personLabel = predict(model, queryFeatures);
+fprintf('Q
+booleanIndex = strcmp(personLabel, personIndex);
+integerIndex = find(booleanIndex);
+
+imshow(queryImage);title('query');
+imshow(read(training(integerIndex), 1));title('matched');
