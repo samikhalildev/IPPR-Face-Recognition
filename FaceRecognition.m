@@ -1,8 +1,8 @@
-
 %% Getting Data
 
 %%% 50 subjects each with 15 images
 database = imageSet('Data/gt_db', 'recursive');
+%database = imageSet('Data/att_faces', 'recursive');
 
 %%% training data contains 12 images per subject
 %%% testing data contains 3 images per subject
@@ -15,26 +15,30 @@ detector.MinSize = [135 135];
 
 
 %% Feature extraction
-featureExtractionMethod = 'LBP';
-[features, labels, personIndex] = FeatureExtraction(trainingData, detector, featureExtractionMethod);
+featureExtractionMethod = 'HOG';
+[features, trainingLabels, personIndex] = FeatureExtraction(trainingData, detector, featureExtractionMethod);
 
 
 %% Training Model
 fprintf('Training\n');
-trainingMethod = 'SVM';
-[model] = Models(features, labels, trainingMethod);
 
+trainingMethod = 'SVM';
+[model] = Models(features, trainingLabels, trainingMethod);
 
 %% Testing Model
 fprintf('Testing\n');
 person = 1;
 queryImage = read(testingData(person), 1);
-
-[queryFeatures, label, index] = FeatureExtraction(testingData, detector, featureExtractionMethod);
-personLabel = predict(model, queryFeatures);
-
-booleanIndex = strcmp(personLabel, personIndex);
+[queryFeatures, truelabel, index] = FeatureExtraction(testingData, detector, featureExtractionMethod);
+predictedLabel = predict(model, queryFeatures);
+predictedLabel = predictedLabel'
+fprintf('Query\n')
+booleanIndex = strcmp(predictedLabel, truelabel);
 integerIndex = find(booleanIndex);
 
-imshow(queryImage);title('query');
-imshow(read(training(integerIndex), 1));title('matched');
+
+%% Create Confusion Matrix
+cm = confusionmat(truelabel,predictedLabel);
+
+% Evaluate Model
+[Accuracy, Precision, Recall, F1_score] = Evaluate(cm);
