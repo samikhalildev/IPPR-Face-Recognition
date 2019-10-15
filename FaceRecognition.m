@@ -1,35 +1,43 @@
 %% Getting Data
 
-%%% 50 subjects each with 15 images
-database = imageSet('Data/gt_db', 'recursive');
-%database = imageSet('Data/att_faces', 'recursive');
+%database = imageSet('Data/gt_db', 'recursive');
+%database = imageSet('Data/FERET', 'recursive');
+database = imageSet('Data/att_faces', 'recursive');
 
-%%% training data contains 12 images per subject
-%%% testing data contains 3 images per subject
+
+%%% training data contains 80% of data
+%%% testing data contains 20% of data
+
 [trainingData, testingData] = partition(database, [0.8 0.2]); 
 
 
-%% Face detection
-detector = vision.CascadeObjectDetector;
-detector.MinSize = [135 135];
-
-
 %% Feature extraction
+% HOG, LBP
+%Extractor
+
 featureExtractionMethod = 'HOG';
-[features, trainingLabels, personIndex] = FeatureExtraction(trainingData, detector, featureExtractionMethod);
+%featureExtractionMethod ='LBP';
+
+fprintf('Extracting\n');
+[features, trainingLabels, personIndex] = FeatureExtraction(trainingData, featureExtractionMethod);
 
 
 %% Training Model
-fprintf('Training\n');
+% SVM, KNN, D-TREE, N-BAYES
+%Classifier        
 
-trainingMethod = 'SVM';
+%trainingMethod = 'SVM';
+trainingMethod = 'KNN';
+%trainingMethod = 'D-TREE';
+
+fprintf('Training\n');
 [model] = Models(features, trainingLabels, trainingMethod);
 
 %% Testing Model
 fprintf('Testing\n');
 person = 1;
 queryImage = read(testingData(person), 1);
-[queryFeatures, truelabel, index] = FeatureExtraction(testingData, detector, featureExtractionMethod);
+[queryFeatures, truelabel, index] = FeatureExtraction(testingData, featureExtractionMethod);
 predictedLabel = predict(model, queryFeatures);
 predictedLabel = predictedLabel'
 fprintf('Query\n')
